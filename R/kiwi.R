@@ -1,7 +1,7 @@
-#' kiwi class
+#' Kiwi Class
 #'
 #' @description
-#'   kiwi class is provide method for korean mophological analyze result.
+#'   Kiwi class is provide method for korean mophological analyze result.
 #'
 #' @importFrom R6 R6Class
 #' @examples
@@ -19,7 +19,8 @@ Kiwi <- R6::R6Class(
     #' @param ... ignored
     print = function(x, ...) {
       cat("<kiwi class> ", sep = "\n")
-      invisible(x)
+      cat(paste0("  model: ",private$model_size), sep = "\n")
+      invisible(self)
     },
 
     #' @description
@@ -32,7 +33,9 @@ Kiwi <- R6::R6Class(
                           model_size = "base",
                           integrate_allomorph = TRUE,
                           load_default_dict = TRUE) {
-      private$num_workers = num_workers
+
+      private$num_workers <-  num_workers
+      private$model_size <- model_size
       private$model_path <- kiwi_model_path_full(model_size)
       if (!kiwi_model_exists(model_size))
         get_kiwi_models(model_size)
@@ -52,18 +55,38 @@ Kiwi <- R6::R6Class(
     #' @description
     #'   add user word with pos and score
     #' @param word \code{char(required)}: target word to add.
-    #' @param pos \code{char(required)}: pos information about word.
+    #' @param tag \code{Tags(required)}: tag information about word.
     #' @param score \code{num(required)}: score information about word.
-    add_user_words = function(word, pos, score) {
-      kiwi_builder_add_word_(private$kiwi_builder, word, pos, score)
+    #' @param orig_word \code{char(optional)}: origin word.
+    add_user_word = function(word, tag, score, orig_word = "") {
+      if (orig_word == "") {
+        kiwi_builder_add_word_(private$kiwi_builder, word, check_tag(tag), score)
+      } else {
+        kiwi_builder_add_alias_word_(private$kiwi_builder, word, check_tag(tag), score, orig_word)
+      }
+      private$builder_updated <- TRUE
     },
 
-    # add_pre_analyzed_words = function(alias, pos, score, orig_word) {
-    #   kiwi_builder_add_word_(private$kiwi_builder, alias, pos, score, orig_word)
-    # },
+    #' @description
+    #'   TODO
+    #' @param form \code{char(required)}: target word to add analyzed result.
+    #' @param analyzed \code{data.frame(required)}: analyzed result expected.
+    #' @param score \code{num(required)}: score information about pre analyzed result.
+    add_pre_analyzed_words = function(form, analyzed, score) {
+      kiwi_builder_add_pre_analyzed_word_(private$kiwi_builder, form, analyzed, score)
+      private$builder_updated <- TRUE
+    },
 
-    # add_rules = function(tag, replacer, score) {},
-    # add_re_rules = function(tag, pattern, repl, score) {},
+    #' @description
+    #'  TODO
+    #' @param tag \code{Tags(required)}: target tag to add rules.
+    #' @param pattern \code{char(required)}: regular expression.
+    #' @param replacement \code{char(required)}: replace text.
+    #' @param score \code{num(required)}: score information about rules.
+    add_rules = function(tag, pattern, replacement, score) {
+      kiwi_builder_add_rule_(private$kiwi_builder, tag, pattern, replacement, score)
+      private$builder_updated <- TRUE
+    },
 
     #' @description
     #'   add user dictionary using text file.
@@ -72,6 +95,7 @@ Kiwi <- R6::R6Class(
       # TODO validate dict
       # TODO add user dict list for save
       kiwi_builder_load_dict_(private$kiwi_builder, user_dict_path)
+      private$builder_updated <- TRUE
     },
 
     #' @description
@@ -86,36 +110,18 @@ Kiwi <- R6::R6Class(
                               max_word_len,
                               min_score,
                               pos_threshold) {
-      kiwi_builder_extract_words_(private$kiwi_builder,
+      res <- kiwi_builder_extract_words_wrap(private$kiwi_builder,
                                   input,
                                   min_cnt,
                                   max_word_len,
                                   min_score,
                                   pos_threshold)
+      private$builder_updated <- TRUE
+      return(res)
     },
 
     #' @description
-    #'   Extract Noun word candidate from texts and add user words.
-    #' @param input \code{char(required)}: target text data
-    #' @param min_cnt \code{int(required)}: minimum count of word in text.
-    #' @param max_word_len \code{int(required)}: max word length.
-    #' @param min_score \code{num(required)}: minimum score.
-    #' @param pos_threshold \code{num(required)}: pos threashold.
-    extract_add_words =  function(input,
-                                  min_cnt,
-                                  max_word_len,
-                                  min_score,
-                                  pos_threshold) {
-      kiwi_builder_extract_add_words_(private$kiwi_builder,
-                                      input,
-                                      min_cnt,
-                                      max_word_len,
-                                      min_score,
-                                      pos_threshold)
-    },
-
-    #' @description
-    #'   Analyze text to token and pos results.
+    #'   Analyze text to token and tag results.
     #' @param text \code{char(required)}: target text.
     #' @param top_n \code{int(optional)}: number of result. Default is 3.
     #' @param match_option match_option [`Match`]: use Match. Default is Match$ALL
@@ -129,7 +135,7 @@ Kiwi <- R6::R6Class(
                        top_n = 3,
                        match_option = Match$ALL,
                        stopwords = FALSE) {
-      if (is.null(private$kiwi))
+      if (any(private$kiwi_not_ready(), private$builder_updated))
         private$kiwi_build()
 
       kiwi_analyze_wrap(private$kiwi, text, top_n, match_option, stopwords)
@@ -152,7 +158,7 @@ Kiwi <- R6::R6Class(
                         match_option = Match$ALL,
                         stopwords = FALSE,
                         form = "tibble") {
-      form <- match.arg(form, c("list", "tibble", "tidytext"))
+      form <- match.arg(form, c("tibble", "tidytext"))
       res <- purrr::map(
         text,
         ~ self$analyze(
@@ -162,8 +168,6 @@ Kiwi <- R6::R6Class(
           stopwords = stopwords
         )[[1]][1]
       )
-      if (form == "list")
-        return(res)
       raw <- purrr::map(
         res,
         ~ tibble::tibble(
@@ -174,9 +178,25 @@ Kiwi <- R6::R6Class(
         )
       )
       if (form == "tibble")
-        return(dplyr::bind_rows(raw, .id = "unique"))
+        return(dplyr::bind_rows(raw, .id = "sent"))
       if (form == "tidytext")
         return(purrr::map(raw, ~ paste0(.x$form, "/", .x$tag)))
+    },
+
+    #' @description
+    #' Some text may not split sentence by sentence.
+    #' split_into_sents works split sentences to sentence by sentence.
+    #'
+    #' @param text \code{char(required)}: target text.
+    #' @param match_option match_option [`Match`]: use Match. Default is Match$ALL
+    #' @param return_tokens \code{bool(optional)}: add tokenized resault.
+    split_into_sents = function(text,
+                                match_option = Match$ALL,
+                                return_tokens = FALSE) {
+      if (any(private$kiwi_not_ready(), private$builder_updated))
+        private$kiwi_build()
+
+      kiwi_split_into_sents_(private$kiwi, text, match_option, return_tokens)
     },
 
     #' @description
@@ -203,40 +223,62 @@ Kiwi <- R6::R6Class(
                       stopwords,
                       form = "tidytext")
       }
-    },
-
-    #' @description
-    #' Some text may not split sentence by sentence.
-    #' split_into_sents works split sentences to sentence by sentence.
-    #'
-    #' @param text \code{char(required)}: target text.
-    #' @param match_option match_option [`Match`]: use Match. Default is Match$ALL
-    #' @param return_tokens \code{bool(optional)}: add tokenized resault.
-    split_into_sents = function(text,
-                                match_option = Match$ALL,
-                                return_tokens = FALSE) {
-      if (private$kiwi_not_ready)
-        private$kiwi_build()
-      kiwi_split_into_sents_(private$kiwi, text, match_option, return_tokens)
     }
-
-    # save_user_dictionarys = function(user_dict_path) {
-    #
-    # }
 
   ),
 
   private = list(
     kiwi = NULL,
     kiwi_builder = NULL,
-    user_dic = NULL,
+    builder_updated = FALSE,
+
+    save_user_dictionary = function(user_dict_path) {
+
+    },
+
+    # # type is user and extracted
+    # word_list = tibble::tibble(type = character(),
+    #                            word = character(),
+    #                            tag = character(),
+    #                            score = double(),
+    #                            orig_word = character()),
+    #
+    # pre_analyzed_list = tibble::tibble(
+    #                                   form = character(),
+    #                                   analyzed = tibble::tibble(
+    #                                               morphs = character(),
+    #                                               tag = character(),
+    #                                               start = integer(),
+    #                                               end = integer()
+    #                                               ),
+    #                                   score = double()
+    #                                   ),
+
+    # dict_list = tibble::tibble(dict_name = character(),
+    #                            info = character()),
+
+    # history = tibble::tibble(method = character(),
+    #                          info = list()),
+    #
+    # add_history = function(method_, info_) {
+    #   private$history <- dplyr::bind_rows(
+    #     private$history,
+    #     tibble::tibble(method = method_, info = list(info_))
+    #   )
+    # },
+
+    kiwi_not_ready = function() {
+      is.null(private$kiwi)
+    },
 
     kiwi_build = function() {
       private$kiwi <- kiwi_builder_build_(private$kiwi_builder)
+      private$builder_updated <- FALSE
     },
 
     num_workers = NULL,
     model_path = NULL,
+    model_size = NULL,
     build_options = NULL
   )
 )

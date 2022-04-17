@@ -1,4 +1,4 @@
-#' analyze
+#' Simple version of analyze function.
 #'
 #' @param top_n  \code{integer}: Number of result. Default is 3.
 #' @inheritParams tokenize
@@ -22,7 +22,7 @@ analyze <-
       init()
 
     kiwi_analyze_wrap(
-      get("kb", envir = .el),
+      get("kw", envir = .el),
       text,
       top_n,
       match_option,

@@ -3,14 +3,12 @@
 #include <cstring>
 #include <vector>
 #include <map>
+#include <regex>
 
 #include <cpp11.hpp>
 using namespace cpp11;
 #include <kiwi/capi.h>
 #include <kiwi/Kiwi.h>
-
-typedef int(*kiwi_receiver_t)(int, kiwi_res_h, void*);
-typedef int(*kiwi_builder_replacer_t)(const char*, int, char*, void*);
 
 static std::map<std::string, int> m = {
   { "URL", KIWI_MATCH_URL },
@@ -29,7 +27,11 @@ static std::map<std::string, int> m = {
 };
 
 int match_options_(const std::string match_string) {
-  if (!m.count(match_string)) throw std::invalid_argument{ std::string{"Unknown Build Options : "} + match_string };
+  if (!m.count(match_string)) {
+    throw std::invalid_argument{
+      std::string{"Unknown Build Options : "} + match_string
+      };
+  }
   return m.find(match_string)->second;
 }
 
@@ -65,11 +67,11 @@ private :
   std::ifstream strm;
 };
 
-int readLines(int line, char* buffer, void* input) {
-  Scanner* scanner = (Scanner*)input;
+int readLines(int line_num, char* buffer, void* user) {
+  Scanner* scanner = (Scanner*)user;
 
   if (buffer == nullptr) {
-    if (line == 0) {
+    if (line_num == 0) {
       scanner->rewind();
     }
 
@@ -82,6 +84,40 @@ int readLines(int line, char* buffer, void* input) {
   strcpy(buffer, scanner->text().c_str());
   return 0;
 }
+
+class Replacer {
+public :
+  void init(const std::string pattern, const std::string replacemnet_) {
+    std::regex re(pattern);
+    this->rep = re;
+    this->replacemnet = replacemnet_;
+  };
+  int size(const char* input) {
+    std::string output = std::regex_replace(std::string(input),
+                                            this->rep,
+                                            this->replacemnet);
+    this->res = output;
+    return strlen(output.c_str())+1;
+  };
+  const char* text() {
+    return this->res.c_str();
+  };
+
+private :
+  std::regex rep;
+  std::string replacemnet = "";
+  std::string res;
+};
+
+int ruleprovider(const char* input, int size, char* buffer, void* user) {
+  Replacer* rpcr = (Replacer*)user;
+  if (buffer == nullptr) {
+    return rpcr->size(input);
+  }
+  strcpy(buffer, rpcr->text());
+  return 0;
+}
+
 
 [[cpp11::register]]
 std::string kiwi_version_() {
@@ -119,51 +155,78 @@ SEXP kiwi_builder_init_(const char* model_path, int num_threads, int options) {
 [[cpp11::register]]
 int kiwi_builder_add_word_(SEXP handle_ex, const char* word, const char* pos, float score) {
   cpp11::external_pointer<kiwi_builder> handle(handle_ex);
-  int res_h = kiwi_builder_add_word(handle.get(), word, pos, score);
-  return res_h;
+  return kiwi_builder_add_word(handle.get(), word, pos, score);
 }
 
 [[cpp11::register]]
 int kiwi_builder_add_alias_word_(SEXP handle_ex, const char* alias, const char* pos, float score, const char* orig_word) {
   cpp11::external_pointer<kiwi_builder> handle(handle_ex);
-  int res_h = kiwi_builder_add_alias_word(handle.get(), alias, pos, score, orig_word);
-  return res_h;
+  return kiwi_builder_add_alias_word(handle.get(), alias, pos, score, orig_word);
 }
 
-// [[cpp11::register]]
-// bool kiwi_builder_add_pre_analyzed_word_(SEXP handle_ex, const std::string form, const cpp11::data_frame analyzed_r, float score) {
-//   cpp11::external_pointer<kiwi_builder> handle(handle_ex);
-//   kiwi::KiwiBuilder* kiwi = (kiwi::KiwiBuilder*)handle.get();
-//
-//   cpp11::strings morphs = analyzed_r["morphs"];
-//   cpp11::strings pos = analyzed_r["pos"];
-//   cpp11::integers start = analyzed_r["start"];
-//   cpp11::integers end = analyzed_r["end"];
-//
-//   std::vector<std::pair<std::u16string, kiwi::POSTag>> analyzed(morphs.size());
-//   std::vector<std::pair<size_t, size_t>> positions(morphs.size());
-//
-//   for (int i = 0; i < morphs.size(); ++i) {
-//     analyzed[i].first = kiwi::utf8To16(std::string(morphs[i]).c_str());
-//     analyzed[i].second = kiwi_bind::parse_tag(std::string(pos[i]).c_str());
-//     positions[i].first = size_t(start[i]);
-//     positions[i].first = size_t(end[i]);
-//   }
-//
-//   return kiwi->addPreAnalyzedWord(kiwi::utf8To16(form), analyzed, positions, score);
-// }
-
-int kiwi_builder_add_rule_(SEXP handle_ex, const char* pos, kiwi_builder_replacer_t replacer, void* user_data, float score) {
+[[cpp11::register]]
+int kiwi_builder_add_pre_analyzed_word_(
+    SEXP handle_ex,
+    const char* form,
+    const cpp11::data_frame analyzed_r,
+    float score) {
   cpp11::external_pointer<kiwi_builder> handle(handle_ex);
-  int res_h = kiwi_builder_add_rule(handle.get(), pos, replacer, user_data, score);
-  return res_h;
+
+  cpp11::strings morphs_r = analyzed_r["morphs"];
+  cpp11::strings pos_r = analyzed_r["pos"];
+
+  const int size = morphs_r.size();
+
+  std::vector<std::string> morphs;
+  std::vector<std::string> pos;
+
+  for (int i = 0; i < size; ++i) {
+    morphs.push_back(static_cast<std::string>(morphs_r[i]));
+    pos.push_back(static_cast<std::string>(pos_r[i]));
+  }
+
+  cpp11::integers start = analyzed_r["start"];
+  cpp11::integers end = analyzed_r["end"];
+
+  const char* analyzed_morphs[30];
+  const char* analyzed_pos[30];
+  int positions[61];
+
+  for (int i = 0; i < size; ++i) {
+    analyzed_morphs[i] = morphs[i].c_str();
+    analyzed_pos[i] =  pos[i].c_str();
+    positions[i*2] = int(start[i]);
+    positions[i*2+1] = int(end[i]);
+  }
+
+  return kiwi_builder_add_pre_analyzed_word(
+    handle.get(),
+    form,
+    size,
+    analyzed_morphs,
+    analyzed_pos,
+    score,
+    positions
+  );
+}
+
+[[cpp11::register]]
+int kiwi_builder_add_rule_(
+    SEXP handle_ex,
+    const char* pos,
+    std::string pattern,
+    std::string replacement,
+    float score) {
+  cpp11::external_pointer<kiwi_builder> handle(handle_ex);
+  Replacer rpcr;
+  rpcr.init(pattern, replacement);
+  return kiwi_builder_add_rule(handle.get(), pos, ruleprovider, &rpcr, score);
 }
 
 [[cpp11::register]]
 int kiwi_builder_load_dict_(SEXP handle_ex, const char* dict_path) {
   cpp11::external_pointer<kiwi_builder> handle(handle_ex);
-  int res_h = kiwi_builder_load_dict(handle.get(), dict_path);
-  return res_h;
+  return kiwi_builder_load_dict(handle.get(), dict_path);
 }
 
 [[cpp11::register]]
@@ -306,15 +369,22 @@ SEXP kiwi_analyze_(
 }
 
 [[cpp11::register]]
-SEXP kiwi_split_into_sents_(SEXP handle_ex, const char* text, int match_options, bool return_tokens) {
+SEXP kiwi_split_into_sents_(
+    SEXP handle_ex,
+    const char* text,
+    std::string match_options,
+    bool return_tokens) {
   cpp11::external_pointer<kiwi_s> handle(handle_ex);
   kiwi_res_h tokenized_res;
   kiwi_res_h *tknptr = &tokenized_res;
   if (!return_tokens) {
-    tknptr = NULL;
+    tknptr = nullptr;
   }
 
-  kiwi_ss_h res_h = kiwi_split_into_sents(handle.get(), text, match_options, tknptr);
+  kiwi_ss_h res_h = kiwi_split_into_sents(handle.get(),
+                                          text,
+                                          match_options_(match_options),
+                                          tknptr);
 
   int resSize = kiwi_ss_size(res_h);
   cpp11::writable::list res;
@@ -325,6 +395,7 @@ SEXP kiwi_split_into_sents_(SEXP handle_ex, const char* text, int match_options,
 
     int start = kiwi_ss_begin_position(res_h, i);
     int end = kiwi_ss_end_position(res_h, i);
+
     sent.push_back({"text"_nm = textr.substr(start, end-start)});
     sent.push_back({"start"_nm = start});
     sent.push_back({"end"_nm = end});

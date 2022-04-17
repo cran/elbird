@@ -36,16 +36,11 @@ Tags <- matchr::Enum("tag",
 check_tag <- function(tag_candidate_char) {
   if (!is_tag(tag_candidate_char))
     stop(paste0(tag_candidate_char, " is not in tag list. Check Tags."))
-  Tags[tolower(tag_candidate_char)][[1]][1]
-}
-
-to_tag <- function(tag_candidate_char) {
-  if (!is_tag(tag_candidate_char))
-    stop(paste0(tag_candidate_char, " is not in tag list. Check Tags."))
-  Tags[tolower(tag_candidate_char)][[1]]
+  Tags[tolower(tag_candidate_char)][[1]][[1]]
 }
 
 is_tag <- function(tag_candidate_char) {
+  if (is.null(tag_candidate_char)) return(FALSE)
   !is.null(Tags[tolower(tag_candidate_char)][[1]])
 }
 

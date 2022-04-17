@@ -1,3 +1,21 @@
+# elbird 0.2.2
+
+* size to 30 for [-Wvla]
+
+# elbird 0.2.1
+
+* Add `Stopwords` `add()` method form param default value NA.
+* Fix `Stopwords` `add_from_dict()` param pass.
+
+# elbird 0.2.0
+
+* Change `_tbl` function to base.
+  `tokenize()` return `tibble` base and remove `tokenize_tbl()`.
+* Fix Kiwi when builder updated, kiwi rebuild.
+* Change git clone to curl release source download for mac.
+* Change tokenize function stopwords params default to TRUE.
+* Update Model version to 0.11.2
+
 # elbird 0.1.3
 
 * Fix bashism on configure file for cran.

@@ -2,9 +2,9 @@
 % Please edit documentation in R/kiwi.R
 \name{Kiwi}
 \alias{Kiwi}
-\title{kiwi class}
+\title{Kiwi Class}
 \description{
-kiwi class is provide method for korean mophological analyze result.
+Kiwi class is provide method for korean mophological analyze result.
 }
 \examples{
 \dontrun{
@@ -28,14 +28,15 @@ kiwi class is provide method for korean mophological analyze result.
 \itemize{
 \item \href{#method-print}{\code{Kiwi$print()}}
 \item \href{#method-new}{\code{Kiwi$new()}}
-\item \href{#method-add_user_words}{\code{Kiwi$add_user_words()}}
+\item \href{#method-add_user_word}{\code{Kiwi$add_user_word()}}
+\item \href{#method-add_pre_analyzed_words}{\code{Kiwi$add_pre_analyzed_words()}}
+\item \href{#method-add_rules}{\code{Kiwi$add_rules()}}
 \item \href{#method-load_user_dictionarys}{\code{Kiwi$load_user_dictionarys()}}
 \item \href{#method-extract_words}{\code{Kiwi$extract_words()}}
-\item \href{#method-extract_add_words}{\code{Kiwi$extract_add_words()}}
 \item \href{#method-analyze}{\code{Kiwi$analyze()}}
 \item \href{#method-tokenize}{\code{Kiwi$tokenize()}}
-\item \href{#method-get_tidytext_func}{\code{Kiwi$get_tidytext_func()}}
 \item \href{#method-split_into_sents}{\code{Kiwi$split_into_sents()}}
+\item \href{#method-get_tidytext_func}{\code{Kiwi$get_tidytext_func()}}
 \item \href{#method-clone}{\code{Kiwi$clone()}}
 }
 }
@@ -87,12 +88,12 @@ Create a kiwi instance.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-add_user_words"></a>}}
-\if{latex}{\out{\hypertarget{method-add_user_words}{}}}
-\subsection{Method \code{add_user_words()}}{
+\if{html}{\out{<a id="method-add_user_word"></a>}}
+\if{latex}{\out{\hypertarget{method-add_user_word}{}}}
+\subsection{Method \code{add_user_word()}}{
 add user word with pos and score
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Kiwi$add_user_words(word, pos, score)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Kiwi$add_user_word(word, tag, score, orig_word = "")}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -100,9 +101,55 @@ add user word with pos and score
 \describe{
 \item{\code{word}}{\code{char(required)}: target word to add.}
 
-\item{\code{pos}}{\code{char(required)}: pos information about word.}
+\item{\code{tag}}{\code{Tags(required)}: tag information about word.}
 
 \item{\code{score}}{\code{num(required)}: score information about word.}
+
+\item{\code{orig_word}}{\code{char(optional)}: origin word.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-add_pre_analyzed_words"></a>}}
+\if{latex}{\out{\hypertarget{method-add_pre_analyzed_words}{}}}
+\subsection{Method \code{add_pre_analyzed_words()}}{
+TODO
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Kiwi$add_pre_analyzed_words(form, analyzed, score)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{form}}{\code{char(required)}: target word to add analyzed result.}
+
+\item{\code{analyzed}}{\code{data.frame(required)}: analyzed result expected.}
+
+\item{\code{score}}{\code{num(required)}: score information about pre analyzed result.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-add_rules"></a>}}
+\if{latex}{\out{\hypertarget{method-add_rules}{}}}
+\subsection{Method \code{add_rules()}}{
+TODO
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Kiwi$add_rules(tag, pattern, replacement, score)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{tag}}{\code{Tags(required)}: target tag to add rules.}
+
+\item{\code{pattern}}{\code{char(required)}: regular expression.}
+
+\item{\code{replacement}}{\code{char(required)}: replace text.}
+
+\item{\code{score}}{\code{num(required)}: score information about rules.}
 }
 \if{html}{\out{</div>}}
 }
@@ -150,35 +197,10 @@ Extract Noun word candidate from texts.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-extract_add_words"></a>}}
-\if{latex}{\out{\hypertarget{method-extract_add_words}{}}}
-\subsection{Method \code{extract_add_words()}}{
-Extract Noun word candidate from texts and add user words.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Kiwi$extract_add_words(input, min_cnt, max_word_len, min_score, pos_threshold)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{input}}{\code{char(required)}: target text data}
-
-\item{\code{min_cnt}}{\code{int(required)}: minimum count of word in text.}
-
-\item{\code{max_word_len}}{\code{int(required)}: max word length.}
-
-\item{\code{min_score}}{\code{num(required)}: minimum score.}
-
-\item{\code{pos_threshold}}{\code{num(required)}: pos threashold.}
-}
-\if{html}{\out{</div>}}
-}
-}
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-analyze"></a>}}
 \if{latex}{\out{\hypertarget{method-analyze}{}}}
 \subsection{Method \code{analyze()}}{
-Analyze text to token and pos results.
+Analyze text to token and tag results.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Kiwi$analyze(text, top_n = 3, match_option = Match$ALL, stopwords = FALSE)}\if{html}{\out{</div>}}
 }
@@ -238,6 +260,28 @@ If not valid value, work same as FALSE.}
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-split_into_sents"></a>}}
+\if{latex}{\out{\hypertarget{method-split_into_sents}{}}}
+\subsection{Method \code{split_into_sents()}}{
+Some text may not split sentence by sentence.
+split_into_sents works split sentences to sentence by sentence.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Kiwi$split_into_sents(text, match_option = Match$ALL, return_tokens = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{text}}{\code{char(required)}: target text.}
+
+\item{\code{match_option}}{match_option \code{\link{Match}}: use Match. Default is Match$ALL}
+
+\item{\code{return_tokens}}{\code{bool(optional)}: add tokenized resault.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-get_tidytext_func"></a>}}
 \if{latex}{\out{\hypertarget{method-get_tidytext_func}{}}}
 \subsection{Method \code{get_tidytext_func()}}{
@@ -275,28 +319,6 @@ If not valid value, work same as FALSE.}
 
 }
 
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-split_into_sents"></a>}}
-\if{latex}{\out{\hypertarget{method-split_into_sents}{}}}
-\subsection{Method \code{split_into_sents()}}{
-Some text may not split sentence by sentence.
-split_into_sents works split sentences to sentence by sentence.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Kiwi$split_into_sents(text, match_option = Match$ALL, return_tokens = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{text}}{\code{char(required)}: target text.}
-
-\item{\code{match_option}}{match_option \code{\link{Match}}: use Match. Default is Match$ALL}
-
-\item{\code{return_tokens}}{\code{bool(optional)}: add tokenized resault.}
-}
-\if{html}{\out{</div>}}
-}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-clone"></a>}}

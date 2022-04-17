@@ -13,7 +13,7 @@ fi
 PKG_TEST_HEADER="<kiwi/Kiwi.h>"
 PKG_LIBS="-lkiwi"
 PKG_CPPFLAGS=""
-LIB_VER="0.11.1"
+LIB_VER="0.11.2"
 
 # Copy libcache for local development.
 if [ -f "`pwd`/kiwilibtmp/libs/libkiwi.a" ]; then
@@ -67,11 +67,13 @@ else
   fi
 
   git config --global advice.detachedHead false
-  git clone --depth 1 https://github.com/bab2min/Kiwi
+  git clone -b v$LIB_VER --depth 1 https://github.com/bab2min/Kiwi
   cd Kiwi
+
   git rm third_party/googletest
   git rm third_party/cpuinfo
   git submodule update --init --recursive
+
   mkdir build
   cd build
   cmake -DCMAKE_BUILD_TYPE=Release -DKIWI_BUILD_TEST=OFF -DKIWI_USE_CPUINFO=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON --log-level=ERROR ..
@@ -84,6 +86,7 @@ else
   mv -f Kiwi/build/libkiwi_static.a kiwilibs/libs/libkiwi.a
   mv -f Kiwi/include kiwilibs/include
   rm -rf Kiwi
+
   # Copy libcache for local development.
   cp -rf kiwilibs/ kiwilibtmp/
   PKG_CPPFLAGS="-I`pwd`/kiwilibs/include $PKG_CPPFLAGS"
