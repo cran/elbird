@@ -1,19 +1,19 @@
 Package: elbird
 Title: Blazing Fast Morphological Analyzer Based on Kiwi(Korean
         Intelligent Word Identifier)
-Version: 0.2.3
+Version: 0.2.5
 Authors@R: person(given = "Chanyub",
-             family = "Park",
-             role = c("aut","cre"),
-             email = "mrchypark@gmail.com",
-             comment = c(ORCID = "0000-0001-6474-2570"))
+           family = "Park",
+           role = c("aut","cre"),
+           email = "mrchypark@gmail.com",
+           comment = c(ORCID = "0000-0001-6474-2570"))
 Description: This is the R wrapper package Kiwi(Korean Intelligent Word Identifier), 
              a blazing fast speed morphological analyzer for Korean. 
              It supports configuration of user dictionary and detection of 
              unregistered nouns based on frequency.
 License: LGPL (>= 3)
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 URL: https://github.com/mrchypark/elbird/
 BugReports: https://github.com/mrchypark/elbird/issues
 SystemRequirements: A valid Kiwi installation. Dynamic library is
@@ -28,8 +28,8 @@ LinkingTo: cpp11
 Suggests: covr, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 NeedsCompilation: yes
-Packaged: 2022-04-19 02:51:00 UTC; mrchypark
+Packaged: 2022-08-12 15:08:33 UTC; mrchypark
 Author: Chanyub Park [aut, cre] (<https://orcid.org/0000-0001-6474-2570>)
 Maintainer: Chanyub Park <mrchypark@gmail.com>
 Repository: CRAN
-Date/Publication: 2022-04-19 11:42:36 UTC
+Date/Publication: 2022-08-12 15:50:02 UTC
